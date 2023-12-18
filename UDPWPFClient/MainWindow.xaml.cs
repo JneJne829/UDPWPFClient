@@ -108,7 +108,7 @@ namespace UDPWPFClient
             {
                 status = 2;
                 Dispatcher.Invoke(() =>
-                {
+                { 
                     InterfaceSelector(1);
                     AddFood(hostData.Content.foods);
                 });
