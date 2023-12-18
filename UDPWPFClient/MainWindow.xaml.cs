@@ -21,6 +21,7 @@ using PlayerPointNamespace;
 using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Threading;
+using FoodNamespace;
 
 
 namespace UDPWPFClient
@@ -28,13 +29,14 @@ namespace UDPWPFClient
     public partial class MainWindow : Window
     {
         private UdpClient udpClient;
-        private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("192.168.66.51"), 11000);
+        private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("120.117.8.155"), 11000);
         private ClientData clientData = new ClientData(0, 0, new PlayerPoint(0, 0));
         private Random random = new Random();
         private ConcurrentDictionary<int, Ellipse> playerList = new ConcurrentDictionary<int, Ellipse>();
-        private int status = 0;
-        private int playerID = -1;
+        private Dictionary<int, Ellipse> ellipseMap = new Dictionary<int, Ellipse>();
         private PlayerPoint playerPosition = new PlayerPoint(0, 0);
+        private int status = 0;
+        private int playerID = -1;   
 
         public MainWindow()
         {
@@ -108,6 +110,7 @@ namespace UDPWPFClient
                 Dispatcher.Invoke(() =>
                 {
                     InterfaceSelector(1);
+                    AddFood(hostData.Content.foods);
                 });
             }
             while (hostData.Content.Message == "Failure")
@@ -132,6 +135,8 @@ namespace UDPWPFClient
                     double offsetY = (hostData.Content.PlayerData.PlayerPosition.Y +
                                       hostData.Content.PlayerData.PlayerDiameter) -
                                      (scrollViewer.ViewportHeight / 2);
+
+                    AddFood(hostData.Content.AddEllipse);
                     scrollViewer.ScrollToHorizontalOffset(offsetX);
                     scrollViewer.ScrollToVerticalOffset(offsetY);
                 }
@@ -150,6 +155,33 @@ namespace UDPWPFClient
             }
         }
 
+        private void AddFood(List<Food> AddEllipse)
+        {
+            List<Color> colors = new List<Color>
+                {
+                    Colors.Red,
+                    Colors.Orange,
+                    Colors.Yellow,
+                    Colors.Green,
+                    Colors.Blue,
+                    Colors.Indigo,
+                    Colors.Violet
+                };
+            foreach (Food food in AddEllipse)
+            {
+                Ellipse ellipse = new Ellipse
+                {
+                    Width = food.Diameter,
+                    Height = food.Diameter,
+                    Fill = new SolidColorBrush(colors[food.Color])
+                };
+                Canvas.SetLeft(ellipse, food.X);
+                Canvas.SetTop(ellipse, food.Y);
+                GameCanvas.Children.Add(ellipse);
+
+                ellipseMap[food.Key] = ellipse;
+            }
+        }
         private void InterfaceSelector(int mode)
         {
             CloaseAllElement();
@@ -183,6 +215,7 @@ namespace UDPWPFClient
             Player.Visibility = Visibility.Visible;
             PlayerMassLabel.Visibility = Visibility.Visible;
         }
+
         private async void Start_Click(object sender, RoutedEventArgs e)
         {
             if (status == 0)
