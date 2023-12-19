@@ -29,7 +29,7 @@ namespace UDPWPFClient
     public partial class MainWindow : Window
     {
         private UdpClient udpClient;
-        private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("120.117.8.155"), 11000);
+        private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("10.16.4.11"), 11000);
         private ClientData clientData = new ClientData(0, 0, new PlayerPoint(0, 0));
         private Random random = new Random();
         private ConcurrentDictionary<int, Ellipse> playerList = new ConcurrentDictionary<int, Ellipse>();
@@ -104,14 +104,21 @@ namespace UDPWPFClient
         }
         private async void ReceiveCreationMessage(HostData hostData)
         {
-            if (hostData.Content.Message == "Success")
+            if (hostData.Content.Message == "Generating")
             {
-                status = 2;
+                
+                Dispatcher.Invoke(() =>
+                {
+                    AddFood(hostData.Content.foods);
+                });
+            }
+            else if (hostData.Content.Message == "Success")
+            {
                 Dispatcher.Invoke(() =>
                 {
                     InterfaceSelector(1);
-                    AddFood(hostData.Content.foods);
                 });
+                status = 2;            
             }
             while (hostData.Content.Message == "Failure")
                 SendData(status, playerID = random.Next(0, int.MaxValue), new PlayerPoint());
@@ -135,8 +142,7 @@ namespace UDPWPFClient
                     double offsetY = (hostData.Content.PlayerData.PlayerPosition.Y +
                                       hostData.Content.PlayerData.PlayerDiameter) -
                                      (scrollViewer.ViewportHeight / 2);
-
-                    AddFood(hostData.Content.AddEllipse);
+                   
                     scrollViewer.ScrollToHorizontalOffset(offsetX);
                     scrollViewer.ScrollToVerticalOffset(offsetY);
                 }
@@ -153,6 +159,7 @@ namespace UDPWPFClient
                 Canvas.SetLeft(cell, hostData.Content.PlayerData.PlayerPosition.X);
                 Canvas.SetTop(cell, hostData.Content.PlayerData.PlayerPosition.Y);
             }
+            AddFood(hostData.Content.AddEllipse);
         }
 
         private void AddFood(List<Food> AddEllipse)
