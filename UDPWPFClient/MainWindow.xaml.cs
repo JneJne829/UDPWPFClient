@@ -106,12 +106,11 @@ namespace UDPWPFClient
         {
             if (hostData.Content.Message == "Generating")
             {
-                
-                Dispatcher.Invoke(() =>
-                {
-                    AddFood(hostData.Content.foods);
-                });
-            }
+                    Dispatcher.Invoke(() =>
+                    {
+                        AddFood(hostData.Content.foods);
+                    });
+                }                        
             else if (hostData.Content.Message == "Success")
             {
                 Dispatcher.Invoke(() =>
