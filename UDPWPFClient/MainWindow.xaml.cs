@@ -29,12 +29,13 @@ namespace UDPWPFClient
     public partial class MainWindow : Window
     {
         private UdpClient udpClient;
-        private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("10.16.4.11"), 11000);
+        private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("192.168.66.51"), 11000);
         private ClientData clientData = new ClientData(0, 0, new PlayerPoint(0, 0));
         private Random random = new Random();
         private ConcurrentDictionary<int, Ellipse> playerList = new ConcurrentDictionary<int, Ellipse>();
         private Dictionary<int, Ellipse> ellipseMap = new Dictionary<int, Ellipse>();
         private PlayerPoint playerPosition = new PlayerPoint(0, 0);
+        private List<Food> foods = new List<Food>();
         private int status = 0;
         private int playerID = -1;   
 
@@ -106,16 +107,18 @@ namespace UDPWPFClient
         {
             if (hostData.Content.Message == "Generating")
             {
-                    Dispatcher.Invoke(() =>
-                    {
-                        AddFood(hostData.Content.foods);
-                    });
-                }                        
+                if (hostData.Content.AddEllipse != null)
+                {
+                    foods.AddRange(hostData.Content.AddEllipse);
+                }
+            }                    
             else if (hostData.Content.Message == "Success")
             {
                 Dispatcher.Invoke(() =>
                 {
                     InterfaceSelector(1);
+                    if(foods.Count != 0)
+                    AddFood(foods);
                 });
                 status = 2;            
             }
