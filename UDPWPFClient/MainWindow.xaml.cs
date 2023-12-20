@@ -33,7 +33,7 @@ namespace UDPWPFClient
         private ClientData clientData = new ClientData(0, 0, new PlayerPoint(0, 0));
         private Random random = new Random();
         private ConcurrentDictionary<int, Ellipse> playerList = new ConcurrentDictionary<int, Ellipse>();
-        private Dictionary<int, Ellipse> ellipseMap = new Dictionary<int, Ellipse>();
+        private ConcurrentDictionary<int, Ellipse> ellipseMap = new ConcurrentDictionary<int, Ellipse>();
         private PlayerPoint playerPosition = new PlayerPoint(0, 0);
         private List<Food> foods = new List<Food>();
         private int status = 0;
@@ -136,18 +136,26 @@ namespace UDPWPFClient
                 
                 Canvas.SetLeft(cell, hostData.Content.PlayerData.PlayerPosition.X);
                 Canvas.SetTop(cell, hostData.Content.PlayerData.PlayerPosition.Y);
+                
                 if (hostData.Content.PlayerID == playerID)
                 {
-                    double offsetX = (hostData.Content.PlayerData.PlayerPosition.X +
-                                  hostData.Content.PlayerData.PlayerDiameter) -
-                                 (scrollViewer.ViewportWidth / 2);
-                    double offsetY = (hostData.Content.PlayerData.PlayerPosition.Y +
-                                      hostData.Content.PlayerData.PlayerDiameter) -
-                                     (scrollViewer.ViewportHeight / 2);
-                   
+                    double scale = CalculateScale(hostData.Content.PlayerData.PlayerDiameter);
+                    double ellipseCenterX = hostData.Content.PlayerData.PlayerPosition.X + (hostData.Content.PlayerData.PlayerDiameter / 2);
+                    double ellipseCenterY = hostData.Content.PlayerData.PlayerPosition.Y + (hostData.Content.PlayerData.PlayerDiameter / 2);
+
+                    // 計算 ScrollViewer 中心點的偏移量，並考慮縮放比例
+                    double offsetX = (ellipseCenterX * scale) - (scrollViewer.ViewportWidth / 2);
+                    double offsetY = (ellipseCenterY * scale) - (scrollViewer.ViewportHeight / 2);
+
+
                     scrollViewer.ScrollToHorizontalOffset(offsetX);
                     scrollViewer.ScrollToVerticalOffset(offsetY);
+                    
+                    GameCanvasScaleTransform.ScaleX = scale;
+                    GameCanvasScaleTransform.ScaleY = scale;
+                    StatusText.Text = $"{((int)cell.ActualHeight).ToString()}";
                 }
+                playerList[hostData.Content.PlayerID] = cell;               
             }
             else
             {
@@ -162,8 +170,54 @@ namespace UDPWPFClient
                 Canvas.SetTop(cell, hostData.Content.PlayerData.PlayerPosition.Y);
             }
             AddFood(hostData.Content.AddEllipse);
+            RemoveFood(hostData.Content.eatenFood);
+        }
+        private double CalculateScale(double Diameter)
+        {
+            return (1 / SelectAppropriateRatio(Diameter)) / (Diameter / this.ActualHeight);
+        }
+        private double SelectAppropriateRatio(double diameter)
+        {
+            if (diameter <= 30)
+                return 8;
+            else if (diameter >= 200)
+                return 3;
+            else
+            {
+                // 當直徑介於30到50之間時，使用線性插值計算比例
+                // 這裡我們將30對應到8，將50對應到6
+                double minDiameter = 30;
+                double maxDiameter = 200;
+                double minRatio = 8;
+                double maxRatio = 3;
+
+                // 計算直徑在這個範圍內的相對位置
+                double progress = (diameter - minDiameter) / (maxDiameter - minDiameter);
+
+                // 根據進度計算比例
+                return minRatio + (maxRatio - minRatio) * progress;
+            }
         }
 
+
+
+        private void RemoveFood(List<int> eatenFood)
+        {
+            Ellipse foundEllipse;
+            foreach (var FoodKey in eatenFood)
+            {
+                if (ellipseMap.ContainsKey(FoodKey))
+                {
+                    foundEllipse = ellipseMap[FoodKey];
+                    if (foundEllipse != null)
+                    {
+                        GameCanvas.Children.Remove(foundEllipse);
+                        ellipseMap.TryRemove(FoodKey, out var removedValue);
+                    }
+                }
+                               
+            }
+        }
         private void AddFood(List<Food> AddEllipse)
         {
             List<Color> colors = new List<Color>

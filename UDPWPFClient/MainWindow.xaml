@@ -5,14 +5,14 @@
         Height="450" Width="800"
         Closing="Window_Closing">
     <DockPanel LastChildFill="True">
-        <!--<StatusBar DockPanel.Dock="Bottom" Height="30">
+        <StatusBar DockPanel.Dock="Bottom" Height="30">
             <StatusBarItem>
                 <TextBlock Name="StatusText"></TextBlock>
             </StatusBarItem>
-        </StatusBar>-->
+        </StatusBar>
         <Grid MouseLeftButtonDown="Grid_MouseLeftButtonDown">
-            <ScrollViewer Name="scrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Grid.RowSpan="2">
-                <Canvas Name="GameCanvas" Background="Beige" Width="2000" Height="1000" MouseMove="GameCanvas_MouseMove">
+            <ScrollViewer Name="scrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" Grid.RowSpan="2">
+                <Canvas Name="GameCanvas" Background="Beige" Width="6000" Height="3000" MouseMove="GameCanvas_MouseMove" RenderTransformOrigin="0.5,0.5">
                     <Canvas.LayoutTransform>
                         <ScaleTransform x:Name="GameCanvasScaleTransform" ScaleX="1" ScaleY="1"/>
                     </Canvas.LayoutTransform>
