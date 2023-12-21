@@ -16,8 +16,10 @@
                     <Canvas.LayoutTransform>
                         <ScaleTransform x:Name="GameCanvasScaleTransform" ScaleX="1" ScaleY="1"/>
                     </Canvas.LayoutTransform>
-                    <Line Name="TrackingLine" Stroke="Gray" StrokeThickness="2" X1="0" Y1="0" X2="0" Y2="0"/>
+
                     <Ellipse Name="Player" Fill="Green" Width="0" Height="0" Canvas.Left="0" Canvas.Top="0"/>
+                    <!--
+                    <Line Name="TrackingLine" Stroke="Gray" StrokeThickness="2" X1="0" Y1="0" X2="0" Y2="0"/>
                     <Label Name="PlayerMassLabel" Content="40" 
                            Width="40" Height="40"
                            HorizontalContentAlignment="Center" 
@@ -26,6 +28,7 @@
                            Background="Transparent" 
                            BorderThickness="0"
                            Canvas.Left="50" Canvas.Top="50"/>
+                     -->
                 </Canvas>
             </ScrollViewer>
             <TextBlock Name="GameLogo" 
@@ -45,7 +48,7 @@
                 Width="300" Height="100"
                 VerticalAlignment="Top"
                 HorizontalAlignment="Center" 
-                Margin="0,130,0,0" 
+                Margin="0,135,0,0" 
                 Content="START" 
                 FontFamily="./Fonts/#Drip October" 
                 Background="Transparent" 
@@ -66,6 +69,31 @@
                 </Label.Style>
             </Label>
 
+            <Label x:Name="IpLabel" 
+                Width="300" Height="100"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Center" 
+                Margin="0,259,0,0" 
+                Content="Enter IP" 
+                FontFamily="./Fonts/#Drip October" 
+                Background="Transparent" 
+                MouseLeftButtonDown="IpLabel_Click"
+                HorizontalContentAlignment="Center" 
+                VerticalContentAlignment="Center">
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Setter Property="FontSize" Value="40"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="purple"/>
+                                <Setter Property="FontSize" Value="48"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
+            
         </Grid>
     </DockPanel>
 </Window>

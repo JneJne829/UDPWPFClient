@@ -37,7 +37,8 @@ namespace UDPWPFClient
         private PlayerPoint playerPosition = new PlayerPoint(0, 0);
         private List<Food> foods = new List<Food>();
         private int status = 0;
-        private int playerID = -1;   
+        private int playerID = -1;
+        private static DateTime setTime;
 
         public MainWindow()
         {
@@ -46,12 +47,28 @@ namespace UDPWPFClient
             InterfaceSelector(0);
             Task.Run(() => StartListening()); // 在后台开始监听
             Task.Run(() => MouseUpdate());
+            Task.Run(() => SendWithTimeout());
+        }
+        private void SendWithTimeout()
+        {
+            while (true)
+            {
+                setTime = DateTime.Now;
+                if (status == 1)
+                {
+                    if((DateTime.Now - setTime).TotalSeconds > 3)
+                    {
+                        MessageBox.Show("Server connection failed.", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        status = 0;
+                    }
+                }
+            }
         }
 
         private void MouseUpdate()
         {
             while (true)
-            {
+            {                
                 if (status == 2)
                 {
                     SendData(status, playerID, playerPosition);
@@ -80,12 +97,21 @@ namespace UDPWPFClient
                             }
                             break;
                         case 2:
-                            if (hostData.Mode == 1 && hostData.Content.Message == "PlayerMove")
+                            if (hostData.Mode == 1)
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    UpdatedPlayerUI(hostData);
+                                    switch (hostData.Content.Message)
+                                    {
+                                        case "PlayerMove" :
+                                            UpdatedPlayerUI(hostData);
+                                            break;
+                                        case "Delete" :
+                                            DeletePlayer(hostData);
+                                            break;
+                                    }
                                 });
+                                
                             }
                             break;
                     }                    
@@ -125,7 +151,16 @@ namespace UDPWPFClient
             while (hostData.Content.Message == "Failure")
                 SendData(status, playerID = random.Next(0, int.MaxValue), new PlayerPoint());
         }
-
+        private void DeletePlayer(HostData hostData)
+        {
+            if (playerList.ContainsKey(hostData.Content.PlayerID))
+            {
+                Ellipse player = playerList[hostData.Content.PlayerID];
+                GameCanvas.Children.Remove(player);
+                playerList.TryRemove(hostData.Content.PlayerID, out _);
+            }
+                
+        }
         private void UpdatedPlayerUI(HostData hostData)
         {
             if (playerList.ContainsKey(hostData.Content.PlayerID))
@@ -261,29 +296,27 @@ namespace UDPWPFClient
         private void CloaseAllElement()
         {
             GameLogo.Visibility = Visibility.Collapsed;
+            IpLabel.Visibility = Visibility.Collapsed;
             StartGameButton.Visibility = Visibility.Collapsed;
             //StartGameButton.Visibility = Visibility.Visible;
-            TrackingLine.Visibility = Visibility.Collapsed;
             Player.Visibility = Visibility.Collapsed;
-            PlayerMassLabel.Visibility = Visibility.Collapsed;
         }
         private void Main_Page()
         {
             StartGameButton.Visibility = Visibility.Visible;
             GameLogo.Visibility = Visibility.Visible;
+            IpLabel.Visibility = Visibility.Visible;
         }
         private void Game_Page()
         {
-            TrackingLine.Visibility = Visibility.Visible;
             Player.Visibility = Visibility.Visible;
-            PlayerMassLabel.Visibility = Visibility.Visible;
         }
 
         private async void Start_Click(object sender, RoutedEventArgs e)
         {
             if (status == 0)
             {
-                status = 1;               
+                status = 1;
                 await Task.Run(() => SendData(status, playerID = random.Next(0, int.MaxValue), new PlayerPoint()));
             }
                 
@@ -337,6 +370,35 @@ namespace UDPWPFClient
                 });
             }
         }
+
+        private void IpLabel_Click(object sender, MouseButtonEventArgs e)
+        {
+            InputDialog inputDialog = new InputDialog();
+            if (inputDialog.ShowDialog() == true) // 检查对话框返回值
+            {
+                string inputIp = inputDialog.ResponseText;
+                if (String.IsNullOrWhiteSpace(inputIp))
+                    IpLabel.Content = "Enter IP";
+                else
+                IpLabel.Content = inputIp; // 更新标签内容
+
+                // 验证并更新 IP 地址
+                if (IPAddress.TryParse(inputIp, out IPAddress ip))
+                {
+                    // 如果输入的是有效的 IP 地址，则更新 serverEndPoint
+                    serverEndPoint = new IPEndPoint(ip, serverEndPoint.Port);
+                    // 或者，如果您想保持原来的 serverEndPoint 实例，可以这样做：
+                    // serverEndPoint.Address = ip;
+                }
+                else
+                {
+                    // 如果输入的 IP 地址无效，可以在这里处理错误
+                    MessageBox.Show("輸入的 IP 地址無效，請重新輸入。");
+                }
+            }
+        }
+
+
         private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             // 只有當用戶點擊並拖曳Grid時，才移動窗口
