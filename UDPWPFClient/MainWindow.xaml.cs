@@ -30,19 +30,34 @@ namespace UDPWPFClient
     {
         private UdpClient udpClient;
         private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("192.168.66.51"), 11000);
-        private ClientData clientData = new ClientData(0, 0, new PlayerPoint(0, 0));
+        private ClientData clientData = new ClientData(0, 0, new PlayerPoint(0, 0), 0);
         private Random random = new Random();
         private ConcurrentDictionary<int, Ellipse> playerList = new ConcurrentDictionary<int, Ellipse>();
         private ConcurrentDictionary<int, Ellipse> ellipseMap = new ConcurrentDictionary<int, Ellipse>();
+        private ConcurrentDictionary<int, int> ballsEatenPerSecond = new ConcurrentDictionary<int, int>();
+        private ConcurrentDictionary<int, int> playerMassPerSecond = new ConcurrentDictionary<int, int>();
         private PlayerPoint playerPosition = new PlayerPoint(0, 0);
         private List<Food> foods = new List<Food>();
+        private Color playerColor = Colors.Green;
         private int status = 0;
         private int playerID = -1;
-        private static DateTime setTime;
-
+        private int colorPtr = 0;
+        private int eatenFood = 0;
+        private int eatenPlayer = 0;
+        private DateTime setTime;
+        private DateTime DeletePlayersetTime;
+        private DateTime aliveTime;
+        private List<Color> colorList = new List<Color>
+            {
+                Colors.Green,Colors.Red,Colors.Blue,Colors.Yellow,Colors.Orange,
+                Colors.Purple,Colors.Magenta,Colors.Cyan,Colors.Lime,Colors.Pink,
+                Colors.Teal,Colors.Olive,Colors.Brown,Colors.Gold,Colors.Silver,
+                Colors.Violet,Colors.Indigo,Colors.Maroon,Colors.Navy,Colors.Turquoise
+            };
         public MainWindow()
         {
             InitializeComponent();
+            aliveTime = DateTime.Now;
             udpClient = new UdpClient(0); // 不指定端口号，系统会自动选择一个可用端口
             InterfaceSelector(0);
             Task.Run(() => StartListening()); // 在后台开始监听
@@ -50,16 +65,28 @@ namespace UDPWPFClient
             Task.Run(() => SendWithTimeout());
         }
         private void SendWithTimeout()
-        {
+        {            
             while (true)
-            {
-                setTime = DateTime.Now;
+            {              
                 if (status == 1)
                 {
                     if((DateTime.Now - setTime).TotalSeconds > 3)
                     {
                         MessageBox.Show("Server connection failed.", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         status = 0;
+                    }
+                }
+                else if(status == 3)
+                {
+                    if ((DateTime.Now - setTime).TotalSeconds > 3)
+                    {
+                        status = 0;
+                        Dispatcher.Invoke(() =>
+                        {
+                            Init();
+                            InterfaceSelector(0);
+                        });
+                                            
                     }
                 }
             }
@@ -97,6 +124,7 @@ namespace UDPWPFClient
                             }
                             break;
                         case 2:
+                        case 3:
                             if (hostData.Mode == 1)
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
@@ -111,7 +139,15 @@ namespace UDPWPFClient
                                             break;
                                     }
                                 });
-                                
+
+                                if (hostData.Content.PlayerID == playerID)
+                                {
+                                    eatenFood += hostData.Content.PlayerData.EatenFood;
+                                    ballsEatenPerSecond.AddOrUpdate(((int)(DateTime.Now - aliveTime).TotalSeconds), 0, (k, oldValue) => oldValue + hostData.Content.PlayerData.EatenFood);
+                                    playerMassPerSecond[(int)(DateTime.Now - aliveTime).TotalSeconds] = (int)hostData.Content.PlayerData.PlayerMass;
+                                    eatenPlayer = hostData.Content.PlayerData.EatenPlayer;
+                                }
+
                             }
                             break;
                     }                    
@@ -151,13 +187,53 @@ namespace UDPWPFClient
             while (hostData.Content.Message == "Failure")
                 SendData(status, playerID = random.Next(0, int.MaxValue), new PlayerPoint());
         }
+        private void Init()
+        {
+            eatenPlayer = 0;
+            eatenFood = 0;
+            aliveTime = DateTime.Now;
+            clientData = new ClientData(0, 0, new PlayerPoint(0, 0), 0);
+            ballsEatenPerSecond = new ConcurrentDictionary<int, int>();
+            playerMassPerSecond = new ConcurrentDictionary<int, int>();
+            playerList = new ConcurrentDictionary<int, Ellipse>();
+            ellipseMap = new ConcurrentDictionary<int, Ellipse>();
+            playerPosition = new PlayerPoint(0, 0);
+            foods = new List<Food>();
+            List<UIElement> ellipsesToRemove = new List<UIElement>();
+
+            // 遍历 GameCanvas 中的所有子元素
+            foreach (UIElement child in GameCanvas.Children)
+            {
+                // 检查是否为 Ellipse 类型
+                if (child is Ellipse)
+                {
+                    ellipsesToRemove.Add(child);
+                }
+            }
+
+            // 移除所有已识别的 Ellipse 元素
+            foreach (Ellipse ellipse in ellipsesToRemove)
+            {
+                GameCanvas.Children.Remove(ellipse);
+            }
+            playerID = -1;
+    }
         private void DeletePlayer(HostData hostData)
         {
+            DeletePlayersetTime = DateTime.Now;
             if (playerList.ContainsKey(hostData.Content.PlayerID))
             {
                 Ellipse player = playerList[hostData.Content.PlayerID];
                 GameCanvas.Children.Remove(player);
-                playerList.TryRemove(hostData.Content.PlayerID, out _);
+                playerList.TryRemove(hostData.Content.PlayerID, out _);                
+            }
+            if(hostData.Content.PlayerID == playerID)
+            {
+                setTime = DateTime.Now;
+                status = 3;
+                MatchResults matchResults = new MatchResults((int)(DateTime.Now - aliveTime).TotalSeconds, eatenPlayer, eatenFood, ballsEatenPerSecond, playerMassPerSecond);
+                matchResults.Show();
+                //MessageBox.Show($"You Died | Eaten {eatenPlayer} Players | Eaten {eatenFood} Foods | Time Alive {(((int)((DateTime.Now - aliveTime).TotalSeconds)) / 60).ToString("D2")}:{(((int)((DateTime.Now - aliveTime).TotalSeconds)) % 60).ToString("D2")}");
             }
                 
         }
@@ -187,15 +263,16 @@ namespace UDPWPFClient
                     scrollViewer.ScrollToVerticalOffset(offsetY);
                     
                     GameCanvasScaleTransform.ScaleX = scale;
-                    GameCanvasScaleTransform.ScaleY = scale;
-                    StatusText.Text = $"{((int)cell.ActualHeight).ToString()}";
+                    GameCanvasScaleTransform.ScaleY = scale;                    
+
+                    StatusText.Text = $"{((int)hostData.Content.PlayerData.PlayerMass).ToString()}";
                 }
                 playerList[hostData.Content.PlayerID] = cell;               
             }
             else
             {
                 Ellipse cell = new Ellipse();
-                cell.Fill = new SolidColorBrush(Colors.Green);
+                cell.Fill = new SolidColorBrush(colorList[(hostData.Content.PlayerData.PlayerColor % colorList.Count)]);
                 cell.Width = hostData.Content.PlayerData.PlayerDiameter;
                 cell.Height = hostData.Content.PlayerData.PlayerDiameter;
 
@@ -206,6 +283,19 @@ namespace UDPWPFClient
             }
             AddFood(hostData.Content.AddEllipse);
             RemoveFood(hostData.Content.eatenFood);
+            UpdateEllipseZIndices(GameCanvas);
+        }
+        private void UpdateEllipseZIndices(Canvas myCanvas)
+        {
+            foreach (var child in myCanvas.Children)
+            {
+                if (child is Ellipse ellipse)
+                {
+                    // 這裡我們以 Ellipse 的面積作為 ZIndex 的依據
+                    double area = ellipse.Width * ellipse.Height;
+                    Canvas.SetZIndex(ellipse, (int)area);
+                }
+            }
         }
         private double CalculateScale(double Diameter)
         {
@@ -213,26 +303,45 @@ namespace UDPWPFClient
         }
         private double SelectAppropriateRatio(double diameter)
         {
-            if (diameter <= 30)
+            if (diameter <= 10)
                 return 8;
+            else if (diameter <= 30)
+            {
+                // 10 到 30 之間，從 8 平滑過渡到 6.5
+                double minDiameter1 = 10;
+                double maxDiameter1 = 30;
+                double minRatio1 = 8;
+                double maxRatio1 = 6.5;
+
+                double progress1 = (diameter - minDiameter1) / (maxDiameter1 - minDiameter1);
+                return minRatio1 + (maxRatio1 - minRatio1) * progress1;
+            }
+            else if (diameter <= 60)
+            {
+                // 30 到 60 之間，從 6.5 平滑過渡到 4.5
+                double minDiameter2 = 30;
+                double maxDiameter2 = 60;
+                double minRatio2 = 6.5;
+                double maxRatio2 = 4.5;
+
+                double progress2 = (diameter - minDiameter2) / (maxDiameter2 - minDiameter2);
+                return minRatio2 + (maxRatio2 - minRatio2) * progress2;
+            }
             else if (diameter >= 200)
                 return 3;
             else
             {
-                // 當直徑介於30到50之間時，使用線性插值計算比例
-                // 這裡我們將30對應到8，將50對應到6
-                double minDiameter = 30;
-                double maxDiameter = 200;
-                double minRatio = 8;
-                double maxRatio = 3;
+                // 60 到 200 之間，從 4.5 平滑過渡到 3
+                double minDiameter3 = 60;
+                double maxDiameter3 = 200;
+                double minRatio3 = 4.5;
+                double maxRatio3 = 3;
 
-                // 計算直徑在這個範圍內的相對位置
-                double progress = (diameter - minDiameter) / (maxDiameter - minDiameter);
-
-                // 根據進度計算比例
-                return minRatio + (maxRatio - minRatio) * progress;
+                double progress3 = (diameter - minDiameter3) / (maxDiameter3 - minDiameter3);
+                return minRatio3 + (maxRatio3 - minRatio3) * progress3;
             }
         }
+
 
 
 
@@ -297,14 +406,16 @@ namespace UDPWPFClient
         {
             GameLogo.Visibility = Visibility.Collapsed;
             IpLabel.Visibility = Visibility.Collapsed;
+            ChangeColorButton.Visibility = Visibility.Collapsed;
             StartGameButton.Visibility = Visibility.Collapsed;
             //StartGameButton.Visibility = Visibility.Visible;
             Player.Visibility = Visibility.Collapsed;
         }
         private void Main_Page()
         {
-            StartGameButton.Visibility = Visibility.Visible;
             GameLogo.Visibility = Visibility.Visible;
+            StartGameButton.Visibility = Visibility.Visible;
+            ChangeColorButton.Visibility = Visibility.Visible;
             IpLabel.Visibility = Visibility.Visible;
         }
         private void Game_Page()
@@ -316,7 +427,10 @@ namespace UDPWPFClient
         {
             if (status == 0)
             {
+                setTime = DateTime.Now;
+                aliveTime = DateTime.Now;
                 status = 1;
+                clientData.Color = colorPtr % colorList.Count;
                 await Task.Run(() => SendData(status, playerID = random.Next(0, int.MaxValue), new PlayerPoint()));
             }
                 
@@ -370,6 +484,16 @@ namespace UDPWPFClient
                 });
             }
         }
+
+        private void ChangeColor_Click(object sender, MouseButtonEventArgs e)
+        {
+            // 示例：更改顏色
+            colorPtr++;
+            ChangeColorButton.Foreground = new SolidColorBrush(colorList[colorPtr % colorList.Count]);          
+
+            // 其他邏輯...
+        }
+
 
         private void IpLabel_Click(object sender, MouseButtonEventArgs e)
         {

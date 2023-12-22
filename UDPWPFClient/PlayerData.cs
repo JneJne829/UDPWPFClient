@@ -14,16 +14,22 @@ namespace PlayerDataNamespace
         public PlayerPoint PlayerPosition { get; set; }
         public double PlayerMass { get; set; }
         public double PlayerDiameter { get; set; }
+        public int PlayerColor { get; set; }
+        public int EatenFood { get; set; }
+        public int EatenPlayer { get; set; }
         public PlayerData()
         {
 
         }
-        public PlayerData(PlayerPoint mousePosition, PlayerPoint playerPosition, double playerMass, double playerDiameter)
+        public PlayerData(PlayerPoint mousePosition, PlayerPoint playerPosition, double playerMass, double playerDiameter, int playerColor, int eatenFood, int eatenPlayer)
         {
             MousePosition = mousePosition;
             PlayerPosition = playerPosition;
             PlayerMass = playerMass;
             PlayerDiameter = playerDiameter;
+            PlayerColor = playerColor;
+            EatenFood = eatenFood;
+            EatenPlayer = eatenPlayer;
         }
     }
 

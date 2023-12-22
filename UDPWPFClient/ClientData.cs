@@ -9,22 +9,23 @@ using PlayerPointNamespace;
 namespace ClientDataNamespace
 {
     public class ClientData
-    {
+    { 
         public int Mode { get; set; }
 
         public int Number { get; set; }
-
         public PlayerPoint Position { get; set; }
+        public int Color { get; set; }
 
         public ClientData()
         {
  
         }
-        public ClientData(int mode, int number, PlayerPoint position)
+        public ClientData(int mode, int number, PlayerPoint position, int color)
         {
             Mode = mode;
             Number = number;
             Position = position;
+            Color = color;
         }
     }
 }

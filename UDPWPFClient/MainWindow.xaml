@@ -93,7 +93,40 @@
                     </Style>
                 </Label.Style>
             </Label>
-            
+
+            <Label x:Name="ChangeColorButton" 
+                Width="300" Height="100"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left" 
+                Margin="507,136,0,0" 
+                Content="COLOR" 
+                FontFamily="./Fonts/#Drip October" 
+                Background="Transparent" 
+                MouseLeftButtonDown="ChangeColor_Click"
+                HorizontalContentAlignment="Center" 
+                VerticalContentAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Label.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="-25.594"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Label.RenderTransform>
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Setter Property="FontSize" Value="52"/>
+                        <Setter Property="Foreground" Value="Green"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="Green"/>
+                                <Setter Property="FontSize" Value="60"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
+
         </Grid>
     </DockPanel>
 </Window>
