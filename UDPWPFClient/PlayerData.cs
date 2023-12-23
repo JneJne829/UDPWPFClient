@@ -10,6 +10,7 @@ namespace PlayerDataNamespace
 {
     public class PlayerData
     {
+        public String PlayerName { get; set; }
         public PlayerPoint MousePosition { get; set; }
         public PlayerPoint PlayerPosition { get; set; }
         public double PlayerMass { get; set; }
@@ -21,8 +22,9 @@ namespace PlayerDataNamespace
         {
 
         }
-        public PlayerData(PlayerPoint mousePosition, PlayerPoint playerPosition, double playerMass, double playerDiameter, int playerColor, int eatenFood, int eatenPlayer)
+        public PlayerData(String playerName, PlayerPoint mousePosition, PlayerPoint playerPosition, double playerMass, double playerDiameter, int playerColor, int eatenFood, int eatenPlayer)
         {
+            PlayerName = playerName;
             MousePosition = mousePosition;
             PlayerPosition = playerPosition;
             PlayerMass = playerMass;

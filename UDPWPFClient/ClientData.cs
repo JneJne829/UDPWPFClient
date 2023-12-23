@@ -11,7 +11,7 @@ namespace ClientDataNamespace
     public class ClientData
     { 
         public int Mode { get; set; }
-
+        public String Name { get; set; }
         public int Number { get; set; }
         public PlayerPoint Position { get; set; }
         public int Color { get; set; }
@@ -20,9 +20,10 @@ namespace ClientDataNamespace
         {
  
         }
-        public ClientData(int mode, int number, PlayerPoint position, int color)
+        public ClientData(int mode, String name, int number, PlayerPoint position, int color)
         {
             Mode = mode;
+            Name = name;
             Number = number;
             Position = position;
             Color = color;

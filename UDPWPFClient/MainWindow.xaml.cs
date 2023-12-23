@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO.Ports;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,28 +31,36 @@ namespace UDPWPFClient
     {
         private UdpClient udpClient;
         private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("192.168.66.51"), 11000);
-        private ClientData clientData = new ClientData(0, 0, new PlayerPoint(0, 0), 0);
+        private ClientData clientData = new ClientData(0, "",0, new PlayerPoint(0, 0), 0);
+        SerialPort mySerialPort = new SerialPort("COM3", 9600);
         private Random random = new Random();
         private ConcurrentDictionary<int, Ellipse> playerList = new ConcurrentDictionary<int, Ellipse>();
         private ConcurrentDictionary<int, Ellipse> ellipseMap = new ConcurrentDictionary<int, Ellipse>();
         private ConcurrentDictionary<int, int> ballsEatenPerSecond = new ConcurrentDictionary<int, int>();
         private ConcurrentDictionary<int, int> playerMassPerSecond = new ConcurrentDictionary<int, int>();
+        private PlayerPoint mousePosition = new PlayerPoint(0, 0);
         private PlayerPoint playerPosition = new PlayerPoint(0, 0);
         private List<Food> foods = new List<Food>();
         private Color playerColor = Colors.Green;
+        private bool isUsingJoystick = false;
+        private bool initMouse = false;
         private int status = 0;
         private int playerID = -1;
         private int colorPtr = 0;
         private int eatenFood = 0;
         private int eatenPlayer = 0;
+        private const double JoystickCenter = 512.0;
+        private const double MovementFactor = 0.05;
+        private double playerDiameter;
         private DateTime setTime;
         private DateTime DeletePlayersetTime;
         private DateTime aliveTime;
+        private String playerName = "UnknownCell";
         private List<Color> colorList = new List<Color>
             {
-                Colors.Green,Colors.Red,Colors.Blue,Colors.Yellow,Colors.Orange,
+                Colors.Olive,Colors.Red,Colors.Blue,Colors.Yellow,Colors.Orange,
                 Colors.Purple,Colors.Magenta,Colors.Cyan,Colors.Lime,Colors.Pink,
-                Colors.Teal,Colors.Olive,Colors.Brown,Colors.Gold,Colors.Silver,
+                Colors.Green,Colors.Olive,Colors.Brown,Colors.Gold,Colors.Silver,
                 Colors.Violet,Colors.Indigo,Colors.Maroon,Colors.Navy,Colors.Turquoise
             };
         public MainWindow()
@@ -98,7 +107,15 @@ namespace UDPWPFClient
             {                
                 if (status == 2)
                 {
-                    SendData(status, playerID, playerPosition);
+                    SendData(status, playerName, playerID, mousePosition);
+
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        Canvas.SetLeft(Mouse, mousePosition.X - (Mouse.Height / 2));
+                        Canvas.SetTop(Mouse, mousePosition.Y - (Mouse.Width / 2));
+                        Mouse.Height = playerDiameter / 2;
+                        Mouse.Width = playerDiameter / 2;
+                    });
                 }
                 Thread.Sleep(2); // 按照您的要求，每4毫秒发送一次
             }
@@ -142,6 +159,13 @@ namespace UDPWPFClient
 
                                 if (hostData.Content.PlayerID == playerID)
                                 {
+                                    if (!initMouse)
+                                    {
+                                        initMouse = true;
+                                        mousePosition = hostData.Content.PlayerData.PlayerPosition;
+                                    }
+                                    playerPosition = hostData.Content.PlayerData.PlayerPosition;
+                                    playerDiameter = hostData.Content.PlayerData.PlayerDiameter;
                                     eatenFood += hostData.Content.PlayerData.EatenFood;
                                     ballsEatenPerSecond.AddOrUpdate(((int)(DateTime.Now - aliveTime).TotalSeconds), 0, (k, oldValue) => oldValue + hostData.Content.PlayerData.EatenFood);
                                     playerMassPerSecond[(int)(DateTime.Now - aliveTime).TotalSeconds] = (int)hostData.Content.PlayerData.PlayerMass;
@@ -185,19 +209,20 @@ namespace UDPWPFClient
                 status = 2;            
             }
             while (hostData.Content.Message == "Failure")
-                SendData(status, playerID = random.Next(0, int.MaxValue), new PlayerPoint());
+                SendData(status, playerName, playerID = random.Next(0, int.MaxValue), new PlayerPoint());
         }
         private void Init()
         {
+            initMouse = false;
             eatenPlayer = 0;
             eatenFood = 0;
             aliveTime = DateTime.Now;
-            clientData = new ClientData(0, 0, new PlayerPoint(0, 0), 0);
+            mousePosition = new PlayerPoint(50, 50);
+            clientData = new ClientData(0, playerName, 0, new PlayerPoint(0, 0), 0);
             ballsEatenPerSecond = new ConcurrentDictionary<int, int>();
             playerMassPerSecond = new ConcurrentDictionary<int, int>();
             playerList = new ConcurrentDictionary<int, Ellipse>();
             ellipseMap = new ConcurrentDictionary<int, Ellipse>();
-            playerPosition = new PlayerPoint(0, 0);
             foods = new List<Food>();
             List<UIElement> ellipsesToRemove = new List<UIElement>();
 
@@ -265,7 +290,7 @@ namespace UDPWPFClient
                     GameCanvasScaleTransform.ScaleX = scale;
                     GameCanvasScaleTransform.ScaleY = scale;                    
 
-                    StatusText.Text = $"{((int)hostData.Content.PlayerData.PlayerMass).ToString()}";
+                    //StatusText.Text = $"{((int)hostData.Content.PlayerData.PlayerMass).ToString()}";
                 }
                 playerList[hostData.Content.PlayerID] = cell;               
             }
@@ -405,22 +430,28 @@ namespace UDPWPFClient
         private void CloaseAllElement()
         {
             GameLogo.Visibility = Visibility.Collapsed;
+            NameLabel.Visibility = Visibility.Collapsed;
             IpLabel.Visibility = Visibility.Collapsed;
             ChangeColorButton.Visibility = Visibility.Collapsed;
+            UsingJoystick.Visibility = Visibility.Collapsed;
             StartGameButton.Visibility = Visibility.Collapsed;
             //StartGameButton.Visibility = Visibility.Visible;
             Player.Visibility = Visibility.Collapsed;
+            Mouse.Visibility = Visibility.Collapsed;
         }
         private void Main_Page()
         {
             GameLogo.Visibility = Visibility.Visible;
+            NameLabel.Visibility = Visibility.Visible;
             StartGameButton.Visibility = Visibility.Visible;
             ChangeColorButton.Visibility = Visibility.Visible;
+            UsingJoystick.Visibility = Visibility.Visible;
             IpLabel.Visibility = Visibility.Visible;
         }
         private void Game_Page()
         {
             Player.Visibility = Visibility.Visible;
+            
         }
 
         private async void Start_Click(object sender, RoutedEventArgs e)
@@ -431,26 +462,27 @@ namespace UDPWPFClient
                 aliveTime = DateTime.Now;
                 status = 1;
                 clientData.Color = colorPtr % colorList.Count;
-                await Task.Run(() => SendData(status, playerID = random.Next(0, int.MaxValue), new PlayerPoint()));
+                await Task.Run(() => SendData(status, playerName, playerID = random.Next(0, int.MaxValue), new PlayerPoint()));
             }
                 
         }
 
         private void GameCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (status == 2)
+            if (status == 2 && !isUsingJoystick)
             {
                 Point position = e.GetPosition(GameCanvas);
-                playerPosition.X = position.X;
-                playerPosition.Y = position.Y;
+                mousePosition.X = position.X;
+                mousePosition.Y = position.Y;
             }
         }
 
-        private void SendData(int mode, int number, PlayerPoint position)
+        private void SendData(int mode, String name, int number, PlayerPoint position)
         {
             try
             {
                 clientData.Mode = mode;
+                clientData.Name = name;
                 clientData.Number = number;
                 clientData.Position = position;
 
@@ -494,7 +526,81 @@ namespace UDPWPFClient
             // 其他邏輯...
         }
 
+        private void UsingJoystick_Click(object sender, MouseButtonEventArgs e)
+        {
+            SolidColorBrush brush = UsingJoystick.Foreground as SolidColorBrush;
+            Color graphiteGray = Color.FromRgb(50, 50, 50);
+            Color customViolet = Color.FromRgb(148, 0, 211);
+            if (!isUsingJoystick)
+            {
+                string[] ports = SerialPort.GetPortNames();
+                if (ports.Contains("COM3"))
+                {
+                    if (!mySerialPort.IsOpen)
+                    {
+                        mySerialPort.DataReceived += MySerialPort_DataReceived;
+                        mySerialPort.Open();                       
+                    }
+                    UsingJoystick.Foreground = new SolidColorBrush(customViolet);
+                    UsingJoystick.Content = "Joystick : Enable";
+                    isUsingJoystick = true;
+                }
+                else
+                    MessageBox.Show("COM3 端口未找到，請檢查設備連接。");
+            }
+            else
+            {
+                UsingJoystick.Foreground = new SolidColorBrush(graphiteGray);
+                UsingJoystick.Content = "Joystick : Disable";
+                isUsingJoystick = false;
+            }
+            
+        }
 
+        private void MySerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            string data = mySerialPort.ReadLine();
+            string[] parts = data.Split(',');
+            if (parts.Length == 2 && int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y))
+            {
+                if (isUsingJoystick)
+                {
+                    if (Math.Abs(playerPosition.X - mousePosition.X) < playerDiameter)
+                        mousePosition.X += (x - JoystickCenter) * MovementFactor;
+                    else if (Math.Abs(x - JoystickCenter) < 5)
+                        mousePosition.X = playerPosition.X + (playerDiameter / 2);
+                    if (Math.Abs(playerPosition.Y - mousePosition.Y) < playerDiameter)
+                        mousePosition.Y += (y - JoystickCenter) * MovementFactor;
+                    else if (Math.Abs(y - JoystickCenter) < 5)
+                        mousePosition.Y = playerPosition.Y + playerDiameter / 2;
+                }
+            }
+        }
+        private double CalculateDistance(PlayerPoint x, PlayerPoint y)
+        {
+            double xDistance = x.X - y.X;
+            double yDistance = x.Y - y.Y;
+
+            return Math.Sqrt(xDistance * xDistance + yDistance * yDistance);
+        }
+        private void Name_Click(object sender, MouseButtonEventArgs e)
+        {
+            EnterName enterName = new EnterName();
+            if (enterName.ShowDialog() == true) // 检查对话框返回值
+            {
+                string input = enterName.ResponseText;
+                if (String.IsNullOrWhiteSpace(input))
+                {
+                    NameLabel.Content = "UnknownCell";
+                    playerName = "UnknownCell";
+                }
+                else
+                {
+                    NameLabel.Content = input; // 更新标签内容
+                    playerName = input;
+                }
+            }
+        }
         private void IpLabel_Click(object sender, MouseButtonEventArgs e)
         {
             InputDialog inputDialog = new InputDialog();
@@ -533,7 +639,7 @@ namespace UDPWPFClient
         }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            SendData(-1, playerID, new PlayerPoint());
+            SendData(-1, playerName, playerID, new PlayerPoint());
             udpClient?.Close();
             base.OnClosed(e);
         }

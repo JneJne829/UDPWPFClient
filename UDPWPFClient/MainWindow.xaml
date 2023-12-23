@@ -5,11 +5,6 @@
         Height="450" Width="800"
         Closing="Window_Closing">
     <DockPanel LastChildFill="True">
-        <StatusBar DockPanel.Dock="Bottom" Height="30">
-            <StatusBarItem>
-                <TextBlock Name="StatusText"></TextBlock>
-            </StatusBarItem>
-        </StatusBar>
         <Grid MouseLeftButtonDown="Grid_MouseLeftButtonDown">
             <ScrollViewer Name="scrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" Grid.RowSpan="2">
                 <Canvas Name="GameCanvas" Background="Beige" Width="6000" Height="3000" MouseMove="GameCanvas_MouseMove" RenderTransformOrigin="0.5,0.5">
@@ -18,6 +13,7 @@
                     </Canvas.LayoutTransform>
 
                     <Ellipse Name="Player" Fill="Green" Width="0" Height="0" Canvas.Left="0" Canvas.Top="0"/>
+                    <Ellipse Name="Mouse" Fill="#80C8C8B4" Width="10" Height="10" Canvas.Left="0" Canvas.Top="0"/>
                     <!--
                     <Line Name="TrackingLine" Stroke="Gray" StrokeThickness="2" X1="0" Y1="0" X2="0" Y2="0"/>
                     <Label Name="PlayerMassLabel" Content="40" 
@@ -42,6 +38,8 @@
                 <Run Text="a" Foreground="Blue"/>
                 <Run Text="r" Foreground="Orange"/>
             </TextBlock>
+
+
 
 
             <Label x:Name="StartGameButton" 
@@ -98,7 +96,7 @@
                 Width="300" Height="100"
                 VerticalAlignment="Top"
                 HorizontalAlignment="Left" 
-                Margin="507,136,0,0" 
+                Margin="476,158,0,0" 
                 Content="COLOR" 
                 FontFamily="./Fonts/#Drip October" 
                 Background="Transparent" 
@@ -116,11 +114,77 @@
                 <Label.Style>
                     <Style TargetType="Label">
                         <Setter Property="FontSize" Value="52"/>
-                        <Setter Property="Foreground" Value="Green"/>
+                        <Setter Property="Foreground" Value="Olive"/>
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="Green"/>
+                                <Setter Property="Foreground" Value="Olive"/>
                                 <Setter Property="FontSize" Value="60"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
+
+            <Label x:Name="UsingJoystick" 
+                Width="400" Height="100"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left" 
+                Margin="423,289,0,0" 
+                Content="Joystick : Disable" 
+                FontFamily="./Fonts/#Drip October" 
+                Background="Transparent" 
+                MouseLeftButtonDown="UsingJoystick_Click"
+                HorizontalContentAlignment="Center" 
+                VerticalContentAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Label.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="-20.082"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Label.RenderTransform>
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Setter Property="FontSize" Value="32"/>
+                        <Setter Property="Foreground" Value="#323232"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#323232"/>
+                                <Setter Property="FontSize" Value="36"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
+
+            <Label x:Name="NameLabel"
+                Width="330" Height="100"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left" 
+                Margin="10,146,0,0" 
+                Content="UnknownCell" 
+                FontFamily="./Fonts/#Drip October" 
+                Background="Transparent" 
+                MouseLeftButtonDown="Name_Click"
+                HorizontalContentAlignment="Center" 
+                VerticalContentAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Label.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="-20.275"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Label.RenderTransform>
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Setter Property="FontSize" Value="40"/>
+                        <Setter Property="Foreground" Value="#7851A9"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#7851A9"/>
+                                <Setter Property="FontSize" Value="48"/>
                             </Trigger>
                         </Style.Triggers>
                     </Style>

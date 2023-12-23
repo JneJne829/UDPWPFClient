@@ -28,6 +28,7 @@ namespace HostDataNamespace
     public class Content
     {
         public string Message { get; set; }
+        public string PlayerName { get; set; }
         public int PlayerID { get; set; }
         public PlayerData PlayerData { get; set; }
         public List<Food> AddEllipse { get; set; }
