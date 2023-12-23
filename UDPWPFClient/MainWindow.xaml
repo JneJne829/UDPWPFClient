@@ -1,9 +1,24 @@
 ﻿<Window x:Class="UDPWPFClient.MainWindow"
-       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Agar.wpf"
         Height="450" Width="800"
         Closing="Window_Closing">
+
+    <Window.Resources>
+        <DataTemplate x:Key="RankingTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Name}"
+                       Padding="5"
+                       FontSize="18"
+                       FontFamily="./Fonts/#Drip October" 
+                       MaxWidth="180"
+                       TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+
     <DockPanel LastChildFill="True">
         <Grid MouseLeftButtonDown="Grid_MouseLeftButtonDown">
             <ScrollViewer Name="scrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" Grid.RowSpan="2">
@@ -27,6 +42,54 @@
                      -->
                 </Canvas>
             </ScrollViewer>
+
+
+            <Grid>
+                <TextBlock x:Name="LeaderboardView"
+                           Text="Leaderboard"
+                           MouseMove="RankingListView_MouseMove"
+                           FontSize="20"
+                           Background="#80AAAAAA"
+                           FontFamily="./Fonts/#Drip October"
+                           HorizontalAlignment="Right" 
+                           VerticalAlignment="Top"
+                           TextAlignment="Center"
+                           Height="28" Width="150"
+                           Padding="0,2,0,0" Margin="0,0,-1,0"/>
+                <ListView x:Name="RankingListView"
+                      MouseMove="RankingListView_MouseMove"
+                      Width="150" Height="150"
+                      HorizontalAlignment="Right" VerticalAlignment="Top"
+                      ItemsSource="{Binding rank}"
+                      ItemTemplate="{StaticResource RankingTemplate}"
+                      Background="Transparent"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                      BorderThickness="0" Margin="0,26,0,0">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Background" Value="#80AAAAAA"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                                            <ContentPresenter />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+
+
+
             <TextBlock Name="GameLogo" 
                     TextAlignment="Center" 
                     HorizontalAlignment="Center" 

@@ -23,6 +23,7 @@ using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Threading;
 using FoodNamespace;
+using RankMemberNamespace;
 
 
 namespace UDPWPFClient
@@ -173,6 +174,10 @@ namespace UDPWPFClient
                                 }
 
                             }
+                            else if (hostData.Mode == 4)
+                            {
+                                UpdateRanking(hostData.Content.Rank);
+                            }
                             break;
                     }                    
                 }
@@ -189,6 +194,19 @@ namespace UDPWPFClient
                 });
             }
         }
+
+        private void UpdateRanking(List<RankMember> members)
+        {
+            // Sort the ranking by the Mass property in descending order and take the top five
+            var topMembers = members.OrderByDescending(m => m.Mass).Take(5).ToList();
+
+            // Update UI
+            Dispatcher.Invoke(() => {
+                RankingListView.ItemsSource = topMembers; // Ensure this matches the name of your ListView in XAML
+            });
+        }
+
+
         private async void ReceiveCreationMessage(HostData hostData)
         {
             if (hostData.Content.Message == "Generating")
@@ -429,6 +447,8 @@ namespace UDPWPFClient
         }
         private void CloaseAllElement()
         {
+            LeaderboardView.Visibility = Visibility.Collapsed;
+            RankingListView.Visibility = Visibility.Collapsed;
             GameLogo.Visibility = Visibility.Collapsed;
             NameLabel.Visibility = Visibility.Collapsed;
             IpLabel.Visibility = Visibility.Collapsed;
@@ -450,8 +470,10 @@ namespace UDPWPFClient
         }
         private void Game_Page()
         {
+            LeaderboardView.Visibility = Visibility.Visible;
+            RankingListView.Visibility = Visibility.Visible;
             Player.Visibility = Visibility.Visible;
-            
+            Mouse.Visibility = Visibility.Visible;
         }
 
         private async void Start_Click(object sender, RoutedEventArgs e)
@@ -466,7 +488,14 @@ namespace UDPWPFClient
             }
                 
         }
+        private void RankingListView_MouseMove(object sender, MouseEventArgs e)
+        {
+            // 轉換點到 Canvas 的坐標系
+            Point position = e.GetPosition(GameCanvas);
 
+            // 呼叫 Canvas 的 MouseMove 事件處理器
+            GameCanvas_MouseMove(GameCanvas, e);
+        }
         private void GameCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             if (status == 2 && !isUsingJoystick)
@@ -565,14 +594,31 @@ namespace UDPWPFClient
             {
                 if (isUsingJoystick)
                 {
-                    if (Math.Abs(playerPosition.X - mousePosition.X) < playerDiameter)
-                        mousePosition.X += (x - JoystickCenter) * MovementFactor;
-                    else if (Math.Abs(x - JoystickCenter) < 5)
+                    
+                    if (Math.Abs(x - JoystickCenter) < 5)
                         mousePosition.X = playerPosition.X + (playerDiameter / 2);
-                    if (Math.Abs(playerPosition.Y - mousePosition.Y) < playerDiameter)
-                        mousePosition.Y += (y - JoystickCenter) * MovementFactor;
-                    else if (Math.Abs(y - JoystickCenter) < 5)
+                    else
+                    {
+                        if (Math.Abs(playerPosition.X - mousePosition.X) < playerDiameter)
+                            mousePosition.X += (x - JoystickCenter) * MovementFactor;
+                        else if ((mousePosition.X - playerPosition.X) > 0)
+                            mousePosition.X = playerPosition.X + (playerDiameter / 2) + (playerDiameter);
+                        else if ((mousePosition.X - playerPosition.X) <= 0)
+                            mousePosition.X = playerPosition.X + (playerDiameter / 2) - (playerDiameter);
+                    }
+
+                    if (Math.Abs(y - JoystickCenter) < 5)
                         mousePosition.Y = playerPosition.Y + playerDiameter / 2;
+                    else
+                    {
+                        if (Math.Abs(playerPosition.Y - mousePosition.Y) < playerDiameter)
+                            mousePosition.Y += (y - JoystickCenter) * MovementFactor;
+                        else if ((mousePosition.Y - playerPosition.Y) > 0)
+                            mousePosition.Y = playerPosition.Y + (playerDiameter / 2) + (playerDiameter);
+                        else if ((mousePosition.Y - playerPosition.Y) <= 0)
+                            mousePosition.Y = playerPosition.Y + (playerDiameter / 2) - (playerDiameter);
+                    }
+                    
                 }
             }
         }

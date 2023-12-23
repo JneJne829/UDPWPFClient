@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using PlayerDataNamespace;
 using FoodNamespace;
+using RankMemberNamespace;
 
 namespace HostDataNamespace
 {
@@ -28,7 +29,7 @@ namespace HostDataNamespace
     public class Content
     {
         public string Message { get; set; }
-        public string PlayerName { get; set; }
+        public List<RankMember> Rank { get; set; }
         public int PlayerID { get; set; }
         public PlayerData PlayerData { get; set; }
         public List<Food> AddEllipse { get; set; }
