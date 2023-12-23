@@ -12,6 +12,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Collections.Concurrent;
+using LiveCharts;
+using LiveCharts.Wpf;
 
 namespace UDPWPFClient
 {
@@ -20,18 +22,38 @@ namespace UDPWPFClient
     /// </summary>
     public partial class MatchResults : Window
     {
-        public MatchResults(int aliveTime, int eatenPlayer, int eatenFood, ConcurrentDictionary<int, int> ballsEatenPerSecond, ConcurrentDictionary<int, int> playerMassPerSecond)
+        public SeriesCollection BallsEatenSeries { get; set; }
+        public SeriesCollection PlayerMassSeries { get; set; }
+
+        public MatchResults(int aliveTime, int eatenPlayer, int eatenFood,
+                            ConcurrentDictionary<int, int> ballsEatenPerSecond,
+                            ConcurrentDictionary<int, int> playerMassPerSecond)
         {
             InitializeComponent();
+
 
             // 设置基本信息
             aliveTimeText.Text = aliveTime.ToString();
             eatenPlayerText.Text = eatenPlayer.ToString();
             eatenFoodText.Text = eatenFood.ToString();
 
-            // 设置字典数据到 ListView
-            ballsEatenListView.ItemsSource = ballsEatenPerSecond;
-            playerMassListView.ItemsSource = playerMassPerSecond;
+            // 初始化圖表數據
+            BallsEatenSeries = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Values = new ChartValues<int>(ballsEatenPerSecond.Values)
+                }
+            };
+            PlayerMassSeries = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Values = new ChartValues<int>(playerMassPerSecond.Values)
+                }
+            };
+
+            DataContext = this;
         }
     }
 }
