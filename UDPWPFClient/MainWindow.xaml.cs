@@ -643,7 +643,7 @@ namespace UDPWPFClient
             string[] ports = SerialPort.GetPortNames();
             if (!ports.Contains("COM4"))
             {
-                MessageBox.Show("COM4 端口未找到，请检查设备连接。");
+                //MessageBox.Show("COM4 端口未找到，请检查设备连接。");
                 return false;
             }
 

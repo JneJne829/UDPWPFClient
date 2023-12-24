@@ -13,11 +13,11 @@
 
         <!-- 展示基本信息 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal">
-            <TextBlock Text="存活时间: " Margin="10"/>
+            <TextBlock Text="Ttime alive: " Margin="10"/>
             <TextBlock x:Name="aliveTimeText" Margin="10"/>
-            <TextBlock Text="吃掉的玩家数: " Margin="10"/>
+            <TextBlock Text="cells eaten: " Margin="10"/>
             <TextBlock x:Name="eatenPlayerText" Margin="10"/>
-            <TextBlock Text="吃掉的食物数: " Margin="10"/>
+            <TextBlock Text="food eaten: " Margin="10"/>
             <TextBlock x:Name="eatenFoodText" Margin="10"/>
         </StackPanel>
 
