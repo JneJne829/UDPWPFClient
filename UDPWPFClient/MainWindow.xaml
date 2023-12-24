@@ -22,7 +22,7 @@
     <DockPanel LastChildFill="True">
         <Grid MouseLeftButtonDown="Grid_MouseLeftButtonDown">
             <ScrollViewer Name="scrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" Grid.RowSpan="2">
-                <Canvas Name="GameCanvas" Background="Beige" Width="6000" Height="3000" MouseMove="GameCanvas_MouseMove" RenderTransformOrigin="0.5,0.5">
+                <Canvas Name="GameCanvas" Background="Beige" Width="6000" Height="6000" MouseMove="GameCanvas_MouseMove" RenderTransformOrigin="0.5,0.5">
                     <Canvas.LayoutTransform>
                         <ScaleTransform x:Name="GameCanvasScaleTransform" ScaleX="1" ScaleY="1"/>
                     </Canvas.LayoutTransform>

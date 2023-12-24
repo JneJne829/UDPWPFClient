@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.IO.Ports;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +34,7 @@ namespace UDPWPFClient
         private UdpClient udpClient;
         private IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("192.168.66.51"), 11000);
         private ClientData clientData = new ClientData(0, "",0, new PlayerPoint(0, 0), 0);
-        SerialPort mySerialPort = new SerialPort("COM3", 9600);
+        SerialPort mySerialPort = new SerialPort("COM4", 115200);
         private Random random = new Random();
         private ConcurrentDictionary<int, Ellipse> playerList = new ConcurrentDictionary<int, Ellipse>();
         private ConcurrentDictionary<int, Ellipse> ellipseMap = new ConcurrentDictionary<int, Ellipse>();
@@ -43,8 +44,9 @@ namespace UDPWPFClient
         private PlayerPoint playerPosition = new PlayerPoint(0, 0);
         private List<Food> foods = new List<Food>();
         private Color playerColor = Colors.Green;
-        private bool isUsingJoystick = false;
+        private int isUsingJoystick = 0;
         private bool initMouse = false;
+        private bool isRun = true; 
         private int status = 0;
         private int playerID = -1;
         private int colorPtr = 0;
@@ -64,19 +66,65 @@ namespace UDPWPFClient
                 Colors.Green,Colors.Olive,Colors.Brown,Colors.Gold,Colors.Silver,
                 Colors.Violet,Colors.Indigo,Colors.Maroon,Colors.Navy,Colors.Turquoise
             };
+
+        private Thread? tcpListenerThread;
+        private TcpListener? tcpListener;
+        private TcpClient? tcpClient;
+        private StreamReader? reader;
+        private volatile bool isListening = true;
+
         public MainWindow()
         {
             InitializeComponent();
             aliveTime = DateTime.Now;
             udpClient = new UdpClient(0); // 不指定端口号，系统会自动选择一个可用端口
             InterfaceSelector(0);
-            Task.Run(() => StartListening()); // 在后台开始监听
+            StartTcpListener();
+            Task.Run(() => StartUdpListening()); // 在后台开始监听
             Task.Run(() => MouseUpdate());
             Task.Run(() => SendWithTimeout());
         }
+
+        private void StartTcpListener()
+        {      
+            
+            tcpListenerThread = new Thread(new ThreadStart(() =>
+            {
+                while (isUsingJoystick != 2)
+                    ;
+                tcpListener = new TcpListener(IPAddress.Any, 5000);
+                tcpListener.Start();
+                tcpClient = tcpListener.AcceptTcpClient();
+                reader = new StreamReader(tcpClient.GetStream());
+
+                try
+                {
+                    while (isListening)
+                    { 
+                        while (isUsingJoystick == 2)
+                        {
+                            string? data = reader.ReadLine();
+                            if (data != null)
+                            {
+                                string[] parts = data.Split(',');
+                                if (parts.Length == 2 && int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y))
+                                {
+                                    JoystickDataProcessing(x, y);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                }
+            }));
+            tcpListenerThread.Start();
+        }
+
         private void SendWithTimeout()
         {            
-            while (true)
+            while (isRun)
             {              
                 if (status == 1)
                 {
@@ -104,7 +152,7 @@ namespace UDPWPFClient
 
         private void MouseUpdate()
         {
-            while (true)
+            while (isRun)
             {                
                 if (status == 2)
                 {
@@ -121,11 +169,11 @@ namespace UDPWPFClient
                 Thread.Sleep(2); // 按照您的要求，每4毫秒发送一次
             }
         }
-        private void StartListening()
+        private void StartUdpListening()
         {
             try
             {
-                while (true)
+                while (isRun)
                 {
                     // 接收數據
                     var serverResponse = udpClient.Receive(ref serverEndPoint);
@@ -473,7 +521,7 @@ namespace UDPWPFClient
             LeaderboardView.Visibility = Visibility.Visible;
             RankingListView.Visibility = Visibility.Visible;
             Player.Visibility = Visibility.Visible;
-            Mouse.Visibility = Visibility.Visible;
+            //Mouse.Visibility = Visibility.Visible;
         }
 
         private async void Start_Click(object sender, RoutedEventArgs e)
@@ -498,7 +546,7 @@ namespace UDPWPFClient
         }
         private void GameCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (status == 2 && !isUsingJoystick)
+            if (status == 2 && isUsingJoystick == 0)
             {
                 Point position = e.GetPosition(GameCanvas);
                 mousePosition.X = position.X;
@@ -560,30 +608,74 @@ namespace UDPWPFClient
             SolidColorBrush brush = UsingJoystick.Foreground as SolidColorBrush;
             Color graphiteGray = Color.FromRgb(50, 50, 50);
             Color customViolet = Color.FromRgb(148, 0, 211);
-            if (!isUsingJoystick)
+            switch (isUsingJoystick)
             {
-                string[] ports = SerialPort.GetPortNames();
-                if (ports.Contains("COM3"))
-                {
-                    if (!mySerialPort.IsOpen)
+                case 0:
+                    if (OpenMySerialPort(false))
                     {
-                        mySerialPort.DataReceived += MySerialPort_DataReceived;
-                        mySerialPort.Open();                       
+                        UsingJoystick.Foreground = new SolidColorBrush(customViolet);
+                        UsingJoystick.Content = "Joystick : Port";
+                        isUsingJoystick = 1;
                     }
+                    else
+                    {
+                        UsingJoystick.Foreground = new SolidColorBrush(customViolet);
+                        UsingJoystick.Content = "Joystick : TCP/IP";
+                        isUsingJoystick = 2;
+                    }
+                    break;
+                case 1:
+                    //OpenMySerialPort(false);
                     UsingJoystick.Foreground = new SolidColorBrush(customViolet);
-                    UsingJoystick.Content = "Joystick : Enable";
-                    isUsingJoystick = true;
-                }
-                else
-                    MessageBox.Show("COM3 端口未找到，請檢查設備連接。");
-            }
-            else
-            {
-                UsingJoystick.Foreground = new SolidColorBrush(graphiteGray);
-                UsingJoystick.Content = "Joystick : Disable";
-                isUsingJoystick = false;
-            }
+                    UsingJoystick.Content = "Joystick : TCP/IP";
+                    isUsingJoystick = 2;
+                    break;
+                case 2:
+                    UsingJoystick.Foreground = new SolidColorBrush(graphiteGray);
+                    UsingJoystick.Content = "Joystick : Disable";
+                    isUsingJoystick = 0;
+                    break;  
+            }           
             
+        }
+        private bool OpenMySerialPort(bool response)
+        {
+            string[] ports = SerialPort.GetPortNames();
+            if (!ports.Contains("COM4"))
+            {
+                MessageBox.Show("COM4 端口未找到，请检查设备连接。");
+                return false;
+            }
+
+            if (response) // 打开端口
+            {
+                if (!mySerialPort.IsOpen)
+                {
+                    try
+                    {
+                        mySerialPort.DataReceived -= MySerialPort_DataReceived;
+                        mySerialPort.DataReceived += MySerialPort_DataReceived;
+                        mySerialPort.Open();
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"无法打开端口: {ex.Message}");
+                        return false;
+                    }
+                }
+            }
+            else // 关闭端口
+            {
+                if (mySerialPort.IsOpen)
+                {
+                    mySerialPort.DataReceived -= MySerialPort_DataReceived;
+                    mySerialPort.Close();
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void MySerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -592,34 +684,39 @@ namespace UDPWPFClient
             string[] parts = data.Split(',');
             if (parts.Length == 2 && int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y))
             {
-                if (isUsingJoystick)
-                {
-                    
-                    if (Math.Abs(x - JoystickCenter) < 5)
-                        mousePosition.X = playerPosition.X + (playerDiameter / 2);
-                    else
-                    {
-                        if (Math.Abs(playerPosition.X - mousePosition.X) < playerDiameter)
-                            mousePosition.X += (x - JoystickCenter) * MovementFactor;
-                        else if ((mousePosition.X - playerPosition.X) > 0)
-                            mousePosition.X = playerPosition.X + (playerDiameter / 2) + (playerDiameter);
-                        else if ((mousePosition.X - playerPosition.X) <= 0)
-                            mousePosition.X = playerPosition.X + (playerDiameter / 2) - (playerDiameter);
-                    }
+                //MessageBox.Show($"{x}, {y}");
+                JoystickDataProcessing(x, y);
+            }
+        }
 
-                    if (Math.Abs(y - JoystickCenter) < 5)
-                        mousePosition.Y = playerPosition.Y + playerDiameter / 2;
-                    else
-                    {
-                        if (Math.Abs(playerPosition.Y - mousePosition.Y) < playerDiameter)
-                            mousePosition.Y += (y - JoystickCenter) * MovementFactor;
-                        else if ((mousePosition.Y - playerPosition.Y) > 0)
-                            mousePosition.Y = playerPosition.Y + (playerDiameter / 2) + (playerDiameter);
-                        else if ((mousePosition.Y - playerPosition.Y) <= 0)
-                            mousePosition.Y = playerPosition.Y + (playerDiameter / 2) - (playerDiameter);
-                    }
-                    
+        private void JoystickDataProcessing(double x, double y)
+        {
+            if (isUsingJoystick != 0)
+            {
+                if (Math.Abs(x - JoystickCenter) < 3)
+                    mousePosition.X = playerPosition.X + (playerDiameter / 2);
+                else
+                {
+                    if (Math.Abs(playerPosition.X - mousePosition.X) < playerDiameter * 2)
+                        mousePosition.X += (x - JoystickCenter) * MovementFactor * 3;
+                    else if ((mousePosition.X - playerPosition.X) > 0)
+                        mousePosition.X = playerPosition.X + (playerDiameter / 2) + (playerDiameter * 2);
+                    else if ((mousePosition.X - playerPosition.X) <= 0)
+                        mousePosition.X = playerPosition.X + (playerDiameter / 2) - (playerDiameter * 2);
                 }
+
+                if (Math.Abs(y - JoystickCenter) < 5)
+                    mousePosition.Y = playerPosition.Y + playerDiameter / 2;
+                else
+                {
+                    if (Math.Abs(playerPosition.Y - mousePosition.Y) < playerDiameter * 2)
+                        mousePosition.Y += (y - JoystickCenter) * MovementFactor * 3;
+                    else if ((mousePosition.Y - playerPosition.Y) > 0)
+                        mousePosition.Y = playerPosition.Y + (playerDiameter / 2) + (playerDiameter * 2);
+                    else if ((mousePosition.Y - playerPosition.Y) <= 0)
+                        mousePosition.Y = playerPosition.Y + (playerDiameter / 2) - (playerDiameter * 2);
+                }
+
             }
         }
         private double CalculateDistance(PlayerPoint x, PlayerPoint y)
@@ -686,9 +783,34 @@ namespace UDPWPFClient
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             SendData(-1, playerName, playerID, new PlayerPoint());
+            isListening = false; // 通知所有线程停止运行
+            isRun = false;
+
+            // 关闭 TCP 监听器
+            tcpListener?.Stop();
+
+            // 关闭串行端口
+            if (mySerialPort.IsOpen)
+            {
+                mySerialPort.Close();
+            }
+
+            // 关闭 UDP 客户端
             udpClient?.Close();
-            base.OnClosed(e);
+
+            // 终止 TCP 监听线程
+            if (tcpListenerThread != null && tcpListenerThread.IsAlive)
+            {
+                tcpListenerThread.Abort(); // 或者使用其他合适的方式来终止线程
+            }
+
+            // 确保关闭所有其他资源和线程
+
+            Application.Current.Shutdown(); // 退出应用程序
         }
+
+
+
     }
 }
 
