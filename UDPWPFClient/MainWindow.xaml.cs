@@ -77,10 +77,10 @@ namespace UDPWPFClient
         {
             InitializeComponent();
             aliveTime = DateTime.Now;
-            udpClient = new UdpClient(0); // 不指定端口号，系统会自动选择一个可用端口
+            udpClient = new UdpClient(0); // 不指定連接埠號，系統會自動選擇一個可用埠
             InterfaceSelector(0);
             StartTcpListener();
-            Task.Run(() => StartUdpListening()); // 在后台开始监听
+            Task.Run(() => StartUdpListening()); // 在後台開始監聽
             Task.Run(() => MouseUpdate());
             Task.Run(() => SendWithTimeout());
         }
@@ -166,7 +166,7 @@ namespace UDPWPFClient
                         Mouse.Width = playerDiameter / 2;
                     });
                 }
-                Thread.Sleep(2); // 按照您的要求，每4毫秒发送一次
+                Thread.Sleep(2); // 
             }
         }
         private void StartUdpListening()
@@ -245,10 +245,10 @@ namespace UDPWPFClient
 
         private void UpdateRanking(List<RankMember> members)
         {
-            // Sort the ranking by the Mass property in descending order and take the top five
+            // 按 Mass 屬性降序排序，取前五名
             var topMembers = members.OrderByDescending(m => m.Mass).Take(5).ToList();
 
-            // Update UI
+            // 更新 UI
             Dispatcher.Invoke(() => {
                 RankingListView.ItemsSource = topMembers; // Ensure this matches the name of your ListView in XAML
             });
@@ -292,17 +292,17 @@ namespace UDPWPFClient
             foods = new List<Food>();
             List<UIElement> ellipsesToRemove = new List<UIElement>();
 
-            // 遍历 GameCanvas 中的所有子元素
+            // 遍歷 GameCanvas 中的所有子元素
             foreach (UIElement child in GameCanvas.Children)
             {
-                // 检查是否为 Ellipse 类型
+                // 檢查是否為 Ellipse 類型
                 if (child is Ellipse)
                 {
                     ellipsesToRemove.Add(child);
                 }
             }
 
-            // 移除所有已识别的 Ellipse 元素
+            // 移除所有已辨識的 Ellipse 元素
             foreach (Ellipse ellipse in ellipsesToRemove)
             {
                 GameCanvas.Children.Remove(ellipse);
@@ -571,7 +571,7 @@ namespace UDPWPFClient
             }
             catch (SocketException socketEx)
             {
-                // 服务器可能关闭或网络问题
+                // 伺服器可能關閉或網路問題
                 Dispatcher.Invoke(() =>
                 {
                     MessageBox.Show($"Unable to connect to the server: {socketEx.Message}");
@@ -579,7 +579,7 @@ namespace UDPWPFClient
             }
             catch (ObjectDisposedException)
             {
-                // UdpClient已被关闭
+                // UdpClient 已關閉
                 /*Dispatcher.Invoke(() =>
                 {
                     MessageBox.Show("The connection is closed, please restart the client.");
@@ -647,7 +647,7 @@ namespace UDPWPFClient
                 return false;
             }
 
-            if (response) // 打开端口
+            if (response) // 開啟連接埠
             {
                 if (!mySerialPort.IsOpen)
                 {
@@ -665,7 +665,7 @@ namespace UDPWPFClient
                     }
                 }
             }
-            else // 关闭端口
+            else // 關閉連接埠
             {
                 if (mySerialPort.IsOpen)
                 {
@@ -729,7 +729,7 @@ namespace UDPWPFClient
         private void Name_Click(object sender, MouseButtonEventArgs e)
         {
             EnterName enterName = new EnterName();
-            if (enterName.ShowDialog() == true) // 检查对话框返回值
+            if (enterName.ShowDialog() == true) // 檢查對話方塊回傳值
             {
                 string input = enterName.ResponseText;
                 if (String.IsNullOrWhiteSpace(input))
@@ -739,7 +739,7 @@ namespace UDPWPFClient
                 }
                 else
                 {
-                    NameLabel.Content = input; // 更新标签内容
+                    NameLabel.Content = input; // 更新標籤內容
                     playerName = input;
                 }
             }
@@ -747,25 +747,25 @@ namespace UDPWPFClient
         private void IpLabel_Click(object sender, MouseButtonEventArgs e)
         {
             InputDialog inputDialog = new InputDialog();
-            if (inputDialog.ShowDialog() == true) // 检查对话框返回值
+            if (inputDialog.ShowDialog() == true) // 檢查對話方塊回傳值
             {
                 string inputIp = inputDialog.ResponseText;
                 if (String.IsNullOrWhiteSpace(inputIp))
                     IpLabel.Content = "Enter IP";
                 else
-                IpLabel.Content = inputIp; // 更新标签内容
+                IpLabel.Content = inputIp; // 更新標籤內容
 
-                // 验证并更新 IP 地址
+                // 驗證並更新 IP 位址
                 if (IPAddress.TryParse(inputIp, out IPAddress ip))
                 {
-                    // 如果输入的是有效的 IP 地址，则更新 serverEndPoint
+                    // 如果輸入的是有效的 IP 位址，則更新 serverEndPoint
                     serverEndPoint = new IPEndPoint(ip, serverEndPoint.Port);
-                    // 或者，如果您想保持原来的 serverEndPoint 实例，可以这样做：
+                    // 或者，如果您想要保持原始的 serverEndPoint 實例，可以這樣做：
                     // serverEndPoint.Address = ip;
                 }
                 else
                 {
-                    // 如果输入的 IP 地址无效，可以在这里处理错误
+                    // 如果輸入的 IP 位址無效，可以在這裡處理錯誤
                     MessageBox.Show("輸入的 IP 地址無效，請重新輸入。");
                 }
             }
@@ -783,30 +783,30 @@ namespace UDPWPFClient
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             SendData(-1, playerName, playerID, new PlayerPoint());
-            isListening = false; // 通知所有线程停止运行
+            isListening = false; // 通知所有線程停止運行
             isRun = false;
 
-            // 关闭 TCP 监听器
+            // 關閉 TCP 監聽器
             tcpListener?.Stop();
 
-            // 关闭串行端口
+            // 關閉串行埠
             if (mySerialPort.IsOpen)
             {
                 mySerialPort.Close();
             }
 
-            // 关闭 UDP 客户端
+            // 關閉 UDP 用戶端
             udpClient?.Close();
 
-            // 终止 TCP 监听线程
+            // 終止 TCP 監聽線程
             if (tcpListenerThread != null && tcpListenerThread.IsAlive)
             {
                 tcpListenerThread.Abort(); // 或者使用其他合适的方式来终止线程
             }
 
-            // 确保关闭所有其他资源和线程
+            // 確保關閉所有其他資源和線程
 
-            Application.Current.Shutdown(); // 退出应用程序
+            Application.Current.Shutdown(); // 退出應用程式
         }
 
 
